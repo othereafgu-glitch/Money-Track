@@ -1,18 +1,27 @@
-/* ================= BASE STYLES ================= */
+/* ================= RESET & BASE ================= */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
+
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
 body {
-  font-family: 'Arial', sans-serif;
+  font-family: Arial, sans-serif;
   background: #f0f2f5;
   color: #222;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
-.dark-mode {
+
+/* ================= DARK MODE ================= */
+body.dark-mode {
   background: #121212;
   color: #f0f0f0;
 }
@@ -25,34 +34,38 @@ header {
   text-align: center;
   position: sticky;
   top: 0;
-  z-index: 100;
-}
-header h1 {
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-}
-header button {
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  margin-top: 0.5rem;
-  background: #357abd;
-  color: #fff;
-  transition: 0.3s;
-}
-header button:hover {
-  background: #2a5f9e;
+  z-index: 50;
 }
 
-/* ================= PAGES ================= */
+header h1 {
+  font-size: 1.6rem;
+  margin-bottom: 0.5rem;
+}
+
+header button {
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  border: none;
+  font-weight: bold;
+  background: #357abd;
+  color: #fff;
+  cursor: pointer;
+}
+
+header button:active {
+  transform: scale(0.97);
+}
+
+/* ================= PAGE SYSTEM (FIXED) ================= */
 .page {
   display: none;
-  padding: 1rem;
+  width: 100%;
   max-width: 480px;
-  margin: 0 auto 60px auto; /* leave space for bottom nav */
+  margin: 0 auto;
+  padding: 1rem;
+  padding-bottom: 80px; /* space for bottom nav */
 }
+
 .page.active {
   display: block;
 }
@@ -64,169 +77,204 @@ header button:hover {
   gap: 1rem;
 }
 
-/* ================= FORMS & INPUTS ================= */
-input, select, button {
+/* ================= INPUTS & BUTTONS ================= */
+input,
+select,
+button {
   width: 100%;
   padding: 0.6rem;
-  margin: 0.4rem 0;
+  margin-top: 0.4rem;
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 1rem;
 }
+
 button {
   background: #4a90e2;
   color: #fff;
-  border: none;
   font-weight: bold;
-  transition: 0.3s;
-}
-button:hover {
-  background: #357abd;
+  border: none;
+  cursor: pointer;
 }
 
-/* ================= QUICK ADD BUTTONS ================= */
+button:active {
+  transform: scale(0.98);
+}
+
+body.dark-mode input,
+body.dark-mode select {
+  background: #1e1e1e;
+  color: #fff;
+  border-color: #444;
+}
+
+/* ================= QUICK ADD ================= */
 .quick-buttons {
   display: flex;
-  flex-wrap: wrap;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
+
 .quick-buttons button {
   flex: 1;
   font-size: 0.9rem;
+}
+
+/* ================= TRANSACTIONS ================= */
+.transaction-list {
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  max-height: 220px;
+  overflow-y: auto;
   padding: 0.5rem;
 }
 
-/* ================= TRANSACTION LIST ================= */
-.transaction-list {
-  max-height: 220px;
-  overflow-y: auto;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #fff;
-  padding: 0.5rem;
-}
-.dark-mode .transaction-list {
-  background: #2a2a2a;
-  border-color: #444;
-}
 .transaction-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.4rem 0;
+  padding: 0.45rem 0;
   border-bottom: 1px solid #eee;
-  touch-action: pan-y;
 }
-.dark-mode .transaction-item {
+
+.transaction-item:last-child {
+  border-bottom: none;
+}
+
+body.dark-mode .transaction-list {
+  background: #1e1e1e;
+  border-color: #444;
+}
+
+body.dark-mode .transaction-item {
   border-color: #555;
 }
 
 /* ================= CHARTS ================= */
 canvas {
-  margin-top: 1rem;
-  border-radius: 8px;
+  width: 100% !important;
   background: #fff;
   padding: 0.5rem;
-}
-.dark-mode canvas {
-  background: #2a2a2a;
+  border-radius: 8px;
 }
 
-/* ================= FUN HUB & CARDS ================= */
+body.dark-mode canvas {
+  background: #1e1e1e;
+}
+
+/* ================= GRID & CARDS ================= */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 1rem;
 }
-.card, .fun-card {
+
+.card,
+.fun-card {
   background: #fff;
   border-radius: 8px;
   padding: 1rem;
   text-align: center;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-.card:hover, .fun-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-.dark-mode .card, .dark-mode .fun-card {
-  background: #1e1e1e;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  cursor: pointer;
 }
 
-/* ================= MUSIC / VIDEO / GAMES ================= */
+.card:active,
+.fun-card:active {
+  transform: scale(0.97);
+}
+
+body.dark-mode .card,
+body.dark-mode .fun-card {
+  background: #1e1e1e;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* ================= MEDIA PLAYERS ================= */
 .controls {
   display: flex;
   justify-content: center;
   gap: 1rem;
-  margin-top: 0.5rem;
-}
-#progressBar {
-  width: 100%;
-  margin-top: 0.5rem;
-}
-#playlist {
-  margin-top: 1rem;
-  list-style: none;
-  max-height: 150px;
-  overflow-y: auto;
-  padding: 0;
-}
-#playlist li {
-  padding: 0.3rem 0;
-  border-bottom: 1px solid #ccc;
-}
-.dark-mode #playlist li {
-  border-color: #555;
-}
-#videoPlayer, #gameFrame {
-  width: 100%;
-  max-height: 250px;
-  border-radius: 6px;
-  margin-top: 0.5rem;
 }
 
-/* ================= BOTTOM NAV ================= */
+#progressBar {
+  width: 100%;
+}
+
+#playlist {
+  list-style: none;
+  margin-top: 0.5rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+#playlist li {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #ccc;
+}
+
+body.dark-mode #playlist li {
+  border-color: #555;
+}
+
+#videoPlayer,
+#gameFrame {
+  width: 100%;
+  height: 240px;
+  border-radius: 6px;
+  border: none;
+}
+
+/* ================= GAME CONTAINER ================= */
+#gameContainer {
+  margin-top: 1rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ================= BOTTOM NAV (FIXED TAP BUG) ================= */
 .bottom-nav {
-  display: flex;
-  justify-content: space-around;
   position: fixed;
   bottom: 0;
+  left: 0;
   width: 100%;
+  height: 64px;
+  display: flex;
   background: #357abd;
   z-index: 100;
 }
+
 .bottom-nav button {
   flex: 1;
-  padding: 0.8rem 0;
+  background: none;
   border: none;
-  background: inherit;
   color: #fff;
   font-weight: bold;
+  font-size: 0.85rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
-  transition: 0.3s;
+  align-items: center;
 }
+
 .bottom-nav button.active {
   background: #4a90e2;
 }
-.bottom-nav button:hover {
-  background: #2a5f9e;
-}
+
 .bottom-nav span {
   font-size: 0.7rem;
-  margin-top: 2px;
 }
 
 /* ================= RESPONSIVE ================= */
 @media (max-width: 500px) {
-  header h1 { font-size: 1.5rem; }
-  input, select, button { font-size: 0.95rem; }
-  canvas { max-width: 100%; }
-  .grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-}
+  header h1 {
+    font-size: 1.4rem;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+  }
