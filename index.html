@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Money Manager App</title>
 
-  <!-- Chart.js CDN (for Finance charts) -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- CSS -->
@@ -13,10 +13,10 @@
 </head>
 <body>
 
-  <!-- ===== APP WRAPPER ===== -->
+  <!-- ===== APP ROOT ===== -->
   <div id="app">
 
-    <!-- ================= DASHBOARD (HOME) ================= -->
+    <!-- ================= DASHBOARD ================= -->
     <section id="dashboard" class="page active">
       <header>
         <h1>Dashboard</h1>
@@ -36,17 +36,20 @@
       </header>
       <div class="content">
         <div class="quick-buttons">
-          <button onclick="quickAdd('Food')">Food</button>
-          <button onclick="quickAdd('Transport')">Transport</button>
-          <button onclick="quickAdd('Entertainment')">Entertainment</button>
-          <button onclick="quickAdd('Savings')">Savings</button>
+          <button data-category="Food">Food</button>
+          <button data-category="Transport">Transport</button>
+          <button data-category="Entertainment">Entertainment</button>
+          <button data-category="Savings">Savings</button>
         </div>
+
         <input type="text" id="desc" placeholder="Description" />
         <input type="number" id="amount" placeholder="Amount" />
+
         <select id="type">
           <option value="income">Income</option>
           <option value="expense">Expense</option>
         </select>
+
         <select id="category">
           <option value="Food">Food</option>
           <option value="Transport">Transport</option>
@@ -54,7 +57,8 @@
           <option value="Savings">Savings</option>
           <option value="Other">Other</option>
         </select>
-        <button onclick="manualAdd()">Add Transaction</button>
+
+        <button id="addTransactionBtn">Add Transaction</button>
       </div>
     </section>
 
@@ -62,7 +66,11 @@
     <section id="history" class="page">
       <header>
         <h1>History</h1>
-        <input type="text" id="search" placeholder="Search by description or category" oninput="renderTransactions()" />
+        <input
+          type="text"
+          id="search"
+          placeholder="Search transactions"
+        />
       </header>
       <div class="content">
         <div class="transaction-list" id="transaction-list"></div>
@@ -75,8 +83,7 @@
         <h1>Budgets</h1>
       </header>
       <div class="content">
-        <p>Set category limits and alerts:</p>
-        <input type="number" id="budgetLimit" placeholder="Limit per category ($)" />
+        <input type="number" id="budgetLimit" placeholder="Limit ($)" />
         <select id="budgetCategory">
           <option value="Food">Food</option>
           <option value="Transport">Transport</option>
@@ -84,7 +91,7 @@
           <option value="Savings">Savings</option>
           <option value="Other">Other</option>
         </select>
-        <button onclick="setBudget()">Set Budget</button>
+        <button id="setBudgetBtn">Set Budget</button>
       </div>
     </section>
 
@@ -94,9 +101,9 @@
         <h1>Settings</h1>
       </header>
       <div class="content">
-        <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
-        <button onclick="exportCSV()">Export Data (CSV)</button>
-        <button onclick="clearAll()">Clear All Data</button>
+        <button id="toggleDark">Toggle Dark Mode</button>
+        <button id="exportCSV">Export CSV</button>
+        <button id="clearData">Clear All Data</button>
       </div>
     </section>
 
@@ -106,45 +113,48 @@
         <h1>Entertainment</h1>
       </header>
       <div class="content grid">
-        <div class="card fun-card" onclick="showPage('music')">
+        <div class="card fun-card" data-page="music">
           <h2>🎵 Music</h2>
           <p>Offline music player</p>
         </div>
-        <div class="card fun-card" onclick="showPage('video')">
+        <div class="card fun-card" data-page="video">
           <h2>🎬 Video</h2>
-          <p>Watch local videos</p>
+          <p>Local video playback</p>
         </div>
-        <div class="card fun-card" onclick="showPage('games')">
+        <div class="card fun-card" data-page="games">
           <h2>🎮 Games</h2>
-          <p>Play lightweight games</p>
+          <p>Lightweight games</p>
         </div>
       </div>
     </section>
 
-    <!-- ================= MUSIC PLAYER ================= -->
+    <!-- ================= MUSIC ================= -->
     <section id="music" class="page">
       <header>
-        <button onclick="showPage('fun')">← Back</button>
+        <button class="back-btn" data-back="fun">← Back</button>
         <h1>Music Player</h1>
       </header>
       <div class="content">
         <input type="file" id="musicInput" accept="audio/*" multiple />
         <p id="trackTitle">No track selected</p>
+
         <audio id="audioPlayer"></audio>
+
         <div class="controls">
           <button id="prevTrack">⏮</button>
           <button id="playPause">▶</button>
           <button id="nextTrack">⏭</button>
         </div>
+
         <input type="range" id="progressBar" value="0" />
         <ul id="playlist"></ul>
       </div>
     </section>
 
-    <!-- ================= VIDEO PLAYER ================= -->
+    <!-- ================= VIDEO ================= -->
     <section id="video" class="page">
       <header>
-        <button onclick="showPage('fun')">← Back</button>
+        <button class="back-btn" data-back="fun">← Back</button>
         <h1>Video Player</h1>
       </header>
       <div class="content">
@@ -153,33 +163,32 @@
       </div>
     </section>
 
-    <!-- ================= GAMES HUB ================= -->
+    <!-- ================= GAMES ================= -->
     <section id="games" class="page">
       <header>
-        <button onclick="showPage('fun')">← Back</button>
+        <button class="back-btn" data-back="fun">← Back</button>
         <h1>Games</h1>
       </header>
-      <div class="content grid" id="gamesList">
-        <!-- Game cards injected via JS -->
-      </div>
+
+      <div class="content grid" id="gamesList"></div>
+
       <div id="gameContainer" class="hidden">
-        <button onclick="closeGame()">Close Game</button>
+        <button id="closeGame">Close Game</button>
         <iframe id="gameFrame"></iframe>
       </div>
     </section>
 
   </div>
 
-  <!-- ================= BOTTOM NAVIGATION ================= -->
+  <!-- ================= BOTTOM NAV ================= -->
   <nav class="bottom-nav">
-    <button onclick="showPage('dashboard')" class="active">🏠<span>Home</span></button>
-    <button onclick="showPage('add')">➕<span>Add</span></button>
-    <button onclick="showPage('history')">📜<span>History</span></button>
-    <button onclick="showPage('fun')">🎉<span>Fun</span></button>
+    <button data-nav="dashboard" class="active">🏠<span>Home</span></button>
+    <button data-nav="add">➕<span>Add</span></button>
+    <button data-nav="history">📜<span>History</span></button>
+    <button data-nav="fun">🎉<span>Fun</span></button>
   </nav>
 
   <!-- JS -->
   <script src="app.js"></script>
-
 </body>
-</html>
+  </html>
