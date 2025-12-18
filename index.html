@@ -10,6 +10,10 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="style.css" />
+
+  <!-- PWA Manifest & Theme -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#1e90ff">
 </head>
 <body>
 
@@ -66,11 +70,7 @@
     <section id="history" class="page">
       <header>
         <h1>History</h1>
-        <input
-          type="text"
-          id="search"
-          placeholder="Search transactions"
-        />
+        <input type="text" id="search" placeholder="Search transactions" />
       </header>
       <div class="content">
         <div class="transaction-list" id="transaction-list"></div>
@@ -123,7 +123,7 @@
         </div>
         <div class="card fun-card" data-page="games">
           <h2>🎮 Games</h2>
-          <p>Lightweight games</p>
+          <p>Offline HTML5 mini-games</p>
         </div>
       </div>
     </section>
@@ -137,15 +137,12 @@
       <div class="content">
         <input type="file" id="musicInput" accept="audio/*" multiple />
         <p id="trackTitle">No track selected</p>
-
         <audio id="audioPlayer"></audio>
-
         <div class="controls">
           <button id="prevTrack">⏮</button>
           <button id="playPause">▶</button>
           <button id="nextTrack">⏭</button>
         </div>
-
         <input type="range" id="progressBar" value="0" />
         <ul id="playlist"></ul>
       </div>
@@ -169,7 +166,6 @@
         <button class="back-btn" data-back="fun">← Back</button>
         <h1>Games</h1>
       </header>
-
       <div class="content grid" id="gamesList"></div>
 
       <div id="gameContainer" class="hidden">
@@ -190,5 +186,44 @@
 
   <!-- JS -->
   <script src="app.js"></script>
+
+  <!-- PWA Service Worker & Install Prompt -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js")
+          .then(reg => console.log("Service Worker registered:", reg.scope))
+          .catch(err => console.error("SW registration failed:", err));
+      });
+    }
+
+    // Optional: Install prompt
+    let deferredPrompt;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.createElement("button");
+      btn.textContent = "Install App";
+      btn.style.position = "fixed";
+      btn.style.bottom = "80px";
+      btn.style.right = "20px";
+      btn.style.zIndex = "9999";
+      btn.style.padding = "10px 20px";
+      btn.style.background = "#1e90ff";
+      btn.style.color = "#fff";
+      btn.style.border = "none";
+      btn.style.borderRadius = "10px";
+      btn.style.fontSize = "16px";
+      btn.onclick = () => {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choice => {
+          console.log("PWA choice:", choice.outcome);
+          deferredPrompt = null;
+          btn.remove();
+        });
+      };
+      document.body.appendChild(btn);
+    });
+  </script>
 </body>
   </html>
