@@ -1,6 +1,5 @@
 /* =======================
-   MONEY MANAGER APP JS
-   GitHub Pages Safe
+   MONEY MANAGER PWA JS
 ======================= */
 
 /* ---------- STATE ---------- */
@@ -11,7 +10,9 @@ const state = {
   streak: JSON.parse(localStorage.getItem("streak")) || {
     count: 0,
     lastDate: null
-  }
+  },
+  tracks: [], // offline music (File objects stored temporarily)
+  videos: []  // offline video (File objects stored temporarily)
 };
 
 /* ---------- ELEMENTS ---------- */
@@ -31,17 +32,11 @@ function showPage(id) {
   document.querySelector(`[data-nav="${id}"]`)?.classList.add("active");
 }
 
-navButtons.forEach(btn => {
-  btn.addEventListener("click", () => showPage(btn.dataset.nav));
-});
+navButtons.forEach(btn => btn.addEventListener("click", () => showPage(btn.dataset.nav)));
 
-document.querySelectorAll(".fun-card").forEach(card => {
-  card.addEventListener("click", () => showPage(card.dataset.page));
-});
+document.querySelectorAll(".fun-card").forEach(card => card.addEventListener("click", () => showPage(card.dataset.page)));
 
-document.querySelectorAll(".back-btn").forEach(btn => {
-  btn.addEventListener("click", () => showPage(btn.dataset.back));
-});
+document.querySelectorAll(".back-btn").forEach(btn => btn.addEventListener("click", () => showPage(btn.dataset.back)));
 
 /* ---------- STREAK SYSTEM ---------- */
 function updateStreak() {
@@ -100,7 +95,6 @@ function saveTransactions() {
 /* ---------- RENDER TRANSACTIONS ---------- */
 function renderTransactions(filter = "") {
   transactionList.innerHTML = "";
-
   state.transactions
     .filter(t => t.desc.toLowerCase().includes(filter.toLowerCase()))
     .reverse()
@@ -116,16 +110,11 @@ function renderTransactions(filter = "") {
     });
 }
 
-searchInput.addEventListener("input", e =>
-  renderTransactions(e.target.value)
-);
+searchInput.addEventListener("input", e => renderTransactions(e.target.value));
 
 /* ---------- BALANCE ---------- */
 function updateBalance() {
-  const balance = state.transactions.reduce((sum, t) => {
-    return t.type === "income" ? sum + t.amount : sum - t.amount;
-  }, 0);
-
+  const balance = state.transactions.reduce((sum, t) => t.type === "income" ? sum + t.amount : sum - t.amount, 0);
   totalBalanceEl.textContent = balance.toFixed(2);
 }
 
@@ -133,13 +122,8 @@ function updateBalance() {
 let barChart, pieChart;
 
 function updateCharts() {
-  const income = state.transactions
-    .filter(t => t.type === "income")
-    .reduce((s, t) => s + t.amount, 0);
-
-  const expense = state.transactions
-    .filter(t => t.type === "expense")
-    .reduce((s, t) => s + t.amount, 0);
+  const income = state.transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const expense = state.transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
 
   barChart?.destroy();
   pieChart?.destroy();
@@ -148,20 +132,18 @@ function updateCharts() {
     type: "bar",
     data: {
       labels: ["Income", "Expense"],
-      datasets: [{
-        data: [income, expense]
-      }]
-    }
+      datasets: [{ data: [income, expense], backgroundColor: ["#1e90ff", "#ff4c4c"] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
   });
 
   pieChart = new Chart(document.getElementById("pieChart"), {
     type: "pie",
     data: {
       labels: ["Income", "Expense"],
-      datasets: [{
-        data: [income, expense]
-      }]
-    }
+      datasets: [{ data: [income, expense], backgroundColor: ["#1e90ff", "#ff4c4c"] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
   });
 }
 
@@ -169,9 +151,7 @@ function updateCharts() {
 document.getElementById("setBudgetBtn").addEventListener("click", () => {
   const limit = +document.getElementById("budgetLimit").value;
   const category = document.getElementById("budgetCategory").value;
-
   if (!limit) return alert("Enter a limit");
-
   state.budgets[category] = limit;
   localStorage.setItem("budgets", JSON.stringify(state.budgets));
   alert("Budget saved");
@@ -192,10 +172,7 @@ document.getElementById("clearData").addEventListener("click", () => {
 
 document.getElementById("exportCSV").addEventListener("click", () => {
   let csv = "Description,Amount,Type,Category,Date\n";
-  state.transactions.forEach(t => {
-    csv += `${t.desc},${t.amount},${t.type},${t.category},${t.date}\n`;
-  });
-
+  state.transactions.forEach(t => csv += `${t.desc},${t.amount},${t.type},${t.category},${t.date}\n`);
   const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -207,46 +184,49 @@ document.getElementById("exportCSV").addEventListener("click", () => {
 const audio = document.getElementById("audioPlayer");
 const playlistEl = document.getElementById("playlist");
 const trackTitle = document.getElementById("trackTitle");
-let tracks = [];
 let currentTrack = 0;
 
-document.getElementById("musicInput").addEventListener("change", e => {
-  tracks = [...e.target.files];
+function loadTracks() {
   playlistEl.innerHTML = "";
-  tracks.forEach((t, i) => {
+  state.tracks.forEach((t, i) => {
     const li = document.createElement("li");
     li.textContent = t.name;
     li.onclick = () => playTrack(i);
     playlistEl.appendChild(li);
   });
+}
+
+document.getElementById("musicInput").addEventListener("change", e => {
+  const files = [...e.target.files];
+  files.forEach(file => state.tracks.push({ name: file.name, file }));
+  loadTracks();
 });
 
 function playTrack(i) {
   currentTrack = i;
-  audio.src = URL.createObjectURL(tracks[i]);
-  trackTitle.textContent = tracks[i].name;
+  const t = state.tracks[i];
+  audio.src = URL.createObjectURL(t.file);
+  trackTitle.textContent = t.name;
   audio.play();
 }
 
-document.getElementById("playPause").onclick = () =>
-  audio.paused ? audio.play() : audio.pause();
+document.getElementById("playPause").onclick = () => audio.paused ? audio.play() : audio.pause();
+document.getElementById("nextTrack").onclick = () => playTrack((currentTrack + 1) % state.tracks.length);
+document.getElementById("prevTrack").onclick = () => playTrack((currentTrack - 1 + state.tracks.length) % state.tracks.length);
 
-document.getElementById("nextTrack").onclick = () =>
-  playTrack((currentTrack + 1) % tracks.length);
+loadTracks();
 
-document.getElementById("prevTrack").onclick = () =>
-  playTrack((currentTrack - 1 + tracks.length) % tracks.length);
-
-/* ---------- VIDEO ---------- */
+/* ---------- VIDEO PLAYER ---------- */
 document.getElementById("videoInput").addEventListener("change", e => {
-  document.getElementById("videoPlayer").src =
-    URL.createObjectURL(e.target.files[0]);
+  const file = e.target.files[0];
+  state.videos.push({ name: file.name, file });
+  document.getElementById("videoPlayer").src = URL.createObjectURL(file);
 });
 
 /* ---------- GAMES ---------- */
 const games = [
-  { name: "2048", url: "https://play2048.co/" },
-  { name: "Tetris", url: "https://tetris.com/play-tetris" }
+  { name: "2048", url: "./games/2048/index.html" },
+  { name: "Tetris", url: "./games/tetris/index.html" }
 ];
 
 const gamesList = document.getElementById("gamesList");
@@ -264,6 +244,7 @@ games.forEach(g => {
   gamesList.appendChild(div);
 });
 
+// Close game button
 document.getElementById("closeGame").onclick = () => {
   gameFrame.src = "";
   gameContainer.classList.add("hidden");
