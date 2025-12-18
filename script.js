@@ -1,243 +1,281 @@
-// ================= SAFE DOM READY =================
-document.addEventListener("DOMContentLoaded", () => {
+/* =======================
+   MONEY MANAGER APP JS
+   GitHub Pages Safe
+======================= */
 
-  // ================= DATA =================
-  let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
-  let budgets = JSON.parse(localStorage.getItem("budgets")) || {};
-  let currentPage = "dashboard";
-
-  let barChart = null;
-  let pieChart = null;
-
-  // ================= PAGE NAVIGATION =================
-  function showPage(pageId) {
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-
-    const page = document.getElementById(pageId);
-    if (!page) return;
-
-    page.classList.add("active");
-    currentPage = pageId;
-
-    // Bottom nav highlight
-    document.querySelectorAll(".bottom-nav button").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.nav === pageId);
-    });
-
-    // Page-specific renders
-    if (pageId === "dashboard") {
-      setTimeout(renderCharts, 50);
-    }
-    if (pageId === "history") {
-      renderTransactions();
-    }
+/* ---------- STATE ---------- */
+const state = {
+  transactions: JSON.parse(localStorage.getItem("transactions")) || [],
+  budgets: JSON.parse(localStorage.getItem("budgets")) || {},
+  darkMode: localStorage.getItem("darkMode") === "true",
+  streak: JSON.parse(localStorage.getItem("streak")) || {
+    count: 0,
+    lastDate: null
   }
+};
 
-  // ================= SAVE =================
-  function saveData() {
-    localStorage.setItem("transactions", JSON.stringify(transactions));
-    localStorage.setItem("budgets", JSON.stringify(budgets));
-  }
+/* ---------- ELEMENTS ---------- */
+const pages = document.querySelectorAll(".page");
+const navButtons = document.querySelectorAll("[data-nav]");
+const totalBalanceEl = document.getElementById("totalBalance");
+const transactionList = document.getElementById("transaction-list");
+const searchInput = document.getElementById("search");
+const streakDisplay = document.getElementById("streakDisplay");
 
-  // ================= TRANSACTIONS =================
-  function addTransaction(desc, amount, type, category) {
-    if (!desc || isNaN(amount)) return alert("Invalid input");
+/* ---------- NAVIGATION ---------- */
+function showPage(id) {
+  pages.forEach(p => p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 
-    transactions.push({
-      desc,
-      amount,
-      type,
-      category,
-      date: new Date().toISOString()
-    });
+  navButtons.forEach(b => b.classList.remove("active"));
+  document.querySelector(`[data-nav="${id}"]`)?.classList.add("active");
+}
 
-    saveData();
-    renderTransactions();
-    renderCharts();
-    updateStreak();
-    checkBudget(category);
-  }
-
-  document.getElementById("addTransactionBtn")?.addEventListener("click", () => {
-    const desc = descInput.value.trim();
-    const amount = parseFloat(amountInput.value);
-    addTransaction(desc, amount, typeSelect.value, categorySelect.value);
-    descInput.value = "";
-    amountInput.value = "";
-  });
-
-  // Quick buttons
-  document.querySelectorAll(".quick-buttons button").forEach(btn => {
-    btn.onclick = () => {
-      const amount = parseFloat(prompt(`Amount for ${btn.dataset.category}`));
-      if (!isNaN(amount)) {
-        addTransaction(btn.dataset.category, amount, "expense", btn.dataset.category);
-      }
-    };
-  });
-
-  // ================= HISTORY =================
-  function renderTransactions() {
-    const list = document.getElementById("transaction-list");
-    if (!list) return;
-
-    const search = document.getElementById("search").value.toLowerCase();
-    list.innerHTML = "";
-
-    transactions
-      .filter(t => t.desc.toLowerCase().includes(search))
-      .forEach((t, i) => {
-        const item = document.createElement("div");
-        item.className = "transaction-item";
-        item.innerHTML = `
-          <span>${t.desc} (${t.category})</span>
-          <span>${t.type === "expense" ? "-" : "+"}$${t.amount.toFixed(2)}</span>
-          <button data-i="${i}">✖</button>
-        `;
-        item.querySelector("button").onclick = () => {
-          transactions.splice(i, 1);
-          saveData();
-          renderTransactions();
-          renderCharts();
-        };
-        list.appendChild(item);
-      });
-  }
-
-  // ================= CHARTS =================
-  function renderCharts() {
-    const bar = document.getElementById("barChart");
-    const pie = document.getElementById("pieChart");
-    if (!bar || !pie) return;
-
-    if (barChart) barChart.destroy();
-    if (pieChart) pieChart.destroy();
-
-    const daily = {};
-    transactions.forEach(t => {
-      const d = t.date.split("T")[0];
-      daily[d] = (daily[d] || 0) + (t.type === "income" ? t.amount : -t.amount);
-    });
-
-    barChart = new Chart(bar, {
-      type: "bar",
-      data: {
-        labels: Object.keys(daily),
-        datasets: [{ data: Object.values(daily), backgroundColor: "#4a90e2" }]
-      }
-    });
-
-    const categories = {};
-    transactions.forEach(t => {
-      if (t.type === "expense") {
-        categories[t.category] = (categories[t.category] || 0) + t.amount;
-      }
-    });
-
-    pieChart = new Chart(pie, {
-      type: "pie",
-      data: {
-        labels: Object.keys(categories),
-        datasets: [{ data: Object.values(categories) }]
-      }
-    });
-
-    document.getElementById("totalBalance").textContent =
-      transactions.reduce((s, t) => s + (t.type === "income" ? t.amount : -t.amount), 0).toFixed(2);
-  }
-
-  // ================= STREAK =================
-  function updateStreak() {
-    const streakEl = document.getElementById("streakDisplay");
-    if (!streakEl) return;
-    streakEl.textContent = `🔥 Logging Streak: ${transactions.length} days`;
-  }
-
-  // ================= SETTINGS =================
-  document.getElementById("toggleDark")?.onclick = () =>
-    document.body.classList.toggle("dark-mode");
-
-  document.getElementById("clearData")?.onclick = () => {
-    if (confirm("Clear all data?")) {
-      transactions = [];
-      budgets = {};
-      saveData();
-      renderTransactions();
-      renderCharts();
-    }
-  };
-
-  // ================= FUN NAV =================
-  document.querySelectorAll(".fun-card").forEach(card => {
-    card.onclick = () => showPage(card.dataset.page);
-  });
-
-  document.querySelectorAll(".back-btn").forEach(btn => {
-    btn.onclick = () => showPage(btn.dataset.back);
-  });
-
-  // ================= MUSIC =================
-  const audio = document.getElementById("audioPlayer");
-  let tracks = [], index = 0;
-
-  document.getElementById("musicInput")?.onchange = e => {
-    tracks = [...e.target.files];
-    index = 0;
-    playTrack();
-  };
-
-  function playTrack() {
-    if (!tracks.length) return;
-    audio.src = URL.createObjectURL(tracks[index]);
-    audio.play();
-  }
-
-  document.getElementById("nextTrack")?.onclick = () => {
-    index = (index + 1) % tracks.length;
-    playTrack();
-  };
-
-  document.getElementById("prevTrack")?.onclick = () => {
-    index = (index - 1 + tracks.length) % tracks.length;
-    playTrack();
-  };
-
-  document.getElementById("playPause")?.onclick = () =>
-    audio.paused ? audio.play() : audio.pause();
-
-  // ================= GAMES =================
-  const games = [
-    { name: "Mini Game 1", url: "games/game1/index.html" },
-    { name: "Mini Game 2", url: "games/game2/index.html" }
-  ];
-
-  const gamesList = document.getElementById("gamesList");
-  const gameFrame = document.getElementById("gameFrame");
-  const gameContainer = document.getElementById("gameContainer");
-
-  if (gamesList) {
-    games.forEach(g => {
-      const card = document.createElement("div");
-      card.className = "card fun-card";
-      card.textContent = g.name;
-      card.onclick = () => {
-        gameContainer.classList.remove("hidden");
-        gameFrame.src = g.url;
-      };
-      gamesList.appendChild(card);
-    });
-  }
-
-  document.getElementById("closeGame")?.onclick = () => {
-    gameContainer.classList.add("hidden");
-    gameFrame.src = "";
-  };
-
-  // ================= BOTTOM NAV =================
-  document.querySelectorAll(".bottom-nav button").forEach(btn => {
-    btn.onclick = () => showPage(btn.dataset.nav);
-  });
-
-  // ================= INIT =================
-  showPage("dashboard");
+navButtons.forEach(btn => {
+  btn.addEventListener("click", () => showPage(btn.dataset.nav));
 });
+
+document.querySelectorAll(".fun-card").forEach(card => {
+  card.addEventListener("click", () => showPage(card.dataset.page));
+});
+
+document.querySelectorAll(".back-btn").forEach(btn => {
+  btn.addEventListener("click", () => showPage(btn.dataset.back));
+});
+
+/* ---------- STREAK SYSTEM ---------- */
+function updateStreak() {
+  const today = new Date().toDateString();
+
+  if (state.streak.lastDate !== today) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (state.streak.lastDate === yesterday.toDateString()) {
+      state.streak.count++;
+    } else {
+      state.streak.count = 1;
+    }
+
+    state.streak.lastDate = today;
+    localStorage.setItem("streak", JSON.stringify(state.streak));
+  }
+
+  streakDisplay.textContent = `🔥 Logging Streak: ${state.streak.count} days`;
+}
+
+/* ---------- TRANSACTIONS ---------- */
+document.getElementById("addTransactionBtn").addEventListener("click", () => {
+  const desc = document.getElementById("desc").value.trim();
+  const amount = +document.getElementById("amount").value;
+  const type = document.getElementById("type").value;
+  const category = document.getElementById("category").value;
+
+  if (!desc || !amount) return alert("Fill all fields");
+
+  state.transactions.push({
+    id: Date.now(),
+    desc,
+    amount,
+    type,
+    category,
+    date: new Date().toLocaleString()
+  });
+
+  saveTransactions();
+  render();
+});
+
+/* Quick category buttons */
+document.querySelectorAll(".quick-buttons button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.getElementById("category").value = btn.dataset.category;
+  });
+});
+
+function saveTransactions() {
+  localStorage.setItem("transactions", JSON.stringify(state.transactions));
+}
+
+/* ---------- RENDER TRANSACTIONS ---------- */
+function renderTransactions(filter = "") {
+  transactionList.innerHTML = "";
+
+  state.transactions
+    .filter(t => t.desc.toLowerCase().includes(filter.toLowerCase()))
+    .reverse()
+    .forEach(t => {
+      const div = document.createElement("div");
+      div.className = "transaction";
+      div.innerHTML = `
+        <strong>${t.desc}</strong>
+        <span>${t.type === "expense" ? "-" : "+"}$${t.amount}</span>
+        <small>${t.category} • ${t.date}</small>
+      `;
+      transactionList.appendChild(div);
+    });
+}
+
+searchInput.addEventListener("input", e =>
+  renderTransactions(e.target.value)
+);
+
+/* ---------- BALANCE ---------- */
+function updateBalance() {
+  const balance = state.transactions.reduce((sum, t) => {
+    return t.type === "income" ? sum + t.amount : sum - t.amount;
+  }, 0);
+
+  totalBalanceEl.textContent = balance.toFixed(2);
+}
+
+/* ---------- CHARTS ---------- */
+let barChart, pieChart;
+
+function updateCharts() {
+  const income = state.transactions
+    .filter(t => t.type === "income")
+    .reduce((s, t) => s + t.amount, 0);
+
+  const expense = state.transactions
+    .filter(t => t.type === "expense")
+    .reduce((s, t) => s + t.amount, 0);
+
+  barChart?.destroy();
+  pieChart?.destroy();
+
+  barChart = new Chart(document.getElementById("barChart"), {
+    type: "bar",
+    data: {
+      labels: ["Income", "Expense"],
+      datasets: [{
+        data: [income, expense]
+      }]
+    }
+  });
+
+  pieChart = new Chart(document.getElementById("pieChart"), {
+    type: "pie",
+    data: {
+      labels: ["Income", "Expense"],
+      datasets: [{
+        data: [income, expense]
+      }]
+    }
+  });
+}
+
+/* ---------- BUDGETS ---------- */
+document.getElementById("setBudgetBtn").addEventListener("click", () => {
+  const limit = +document.getElementById("budgetLimit").value;
+  const category = document.getElementById("budgetCategory").value;
+
+  if (!limit) return alert("Enter a limit");
+
+  state.budgets[category] = limit;
+  localStorage.setItem("budgets", JSON.stringify(state.budgets));
+  alert("Budget saved");
+});
+
+/* ---------- SETTINGS ---------- */
+document.getElementById("toggleDark").addEventListener("click", () => {
+  document.body.classList.toggle("dark");
+  state.darkMode = !state.darkMode;
+  localStorage.setItem("darkMode", state.darkMode);
+});
+
+document.getElementById("clearData").addEventListener("click", () => {
+  if (!confirm("Clear all data?")) return;
+  localStorage.clear();
+  location.reload();
+});
+
+document.getElementById("exportCSV").addEventListener("click", () => {
+  let csv = "Description,Amount,Type,Category,Date\n";
+  state.transactions.forEach(t => {
+    csv += `${t.desc},${t.amount},${t.type},${t.category},${t.date}\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "transactions.csv";
+  a.click();
+});
+
+/* ---------- MUSIC PLAYER ---------- */
+const audio = document.getElementById("audioPlayer");
+const playlistEl = document.getElementById("playlist");
+const trackTitle = document.getElementById("trackTitle");
+let tracks = [];
+let currentTrack = 0;
+
+document.getElementById("musicInput").addEventListener("change", e => {
+  tracks = [...e.target.files];
+  playlistEl.innerHTML = "";
+  tracks.forEach((t, i) => {
+    const li = document.createElement("li");
+    li.textContent = t.name;
+    li.onclick = () => playTrack(i);
+    playlistEl.appendChild(li);
+  });
+});
+
+function playTrack(i) {
+  currentTrack = i;
+  audio.src = URL.createObjectURL(tracks[i]);
+  trackTitle.textContent = tracks[i].name;
+  audio.play();
+}
+
+document.getElementById("playPause").onclick = () =>
+  audio.paused ? audio.play() : audio.pause();
+
+document.getElementById("nextTrack").onclick = () =>
+  playTrack((currentTrack + 1) % tracks.length);
+
+document.getElementById("prevTrack").onclick = () =>
+  playTrack((currentTrack - 1 + tracks.length) % tracks.length);
+
+/* ---------- VIDEO ---------- */
+document.getElementById("videoInput").addEventListener("change", e => {
+  document.getElementById("videoPlayer").src =
+    URL.createObjectURL(e.target.files[0]);
+});
+
+/* ---------- GAMES ---------- */
+const games = [
+  { name: "2048", url: "https://play2048.co/" },
+  { name: "Tetris", url: "https://tetris.com/play-tetris" }
+];
+
+const gamesList = document.getElementById("gamesList");
+const gameFrame = document.getElementById("gameFrame");
+const gameContainer = document.getElementById("gameContainer");
+
+games.forEach(g => {
+  const div = document.createElement("div");
+  div.className = "card";
+  div.textContent = g.name;
+  div.onclick = () => {
+    gameFrame.src = g.url;
+    gameContainer.classList.remove("hidden");
+  };
+  gamesList.appendChild(div);
+});
+
+document.getElementById("closeGame").onclick = () => {
+  gameFrame.src = "";
+  gameContainer.classList.add("hidden");
+};
+
+/* ---------- INIT ---------- */
+function render() {
+  updateBalance();
+  renderTransactions();
+  updateCharts();
+}
+
+if (state.darkMode) document.body.classList.add("dark");
+updateStreak();
+render();
